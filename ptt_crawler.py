@@ -95,6 +95,20 @@ class ptt_craw():
         res = rs.get('https://www.ptt.cc/bbs/Beauty/index.html', verify=False)
         soup = BeautifulSoup(res.text, 'html.parser')
         # print(soup)
+        tag = page_option.find_all(class_="btn wide")[1]
+        link = tag.get('href')
+        index = int(link[link.find('index')+5:link.find('.html')])
+
+        while True:
+            url = 'https://www.ptt.cc/bbs/Beauty/index{}.html'.format(index)
+            res = rs.get(index, verify=False)
+            
+
+
+
+
+
+
         all_page_url = soup.select('.btn.wide')[1]['href']
     
         # https://stackoverflow.com/questions/38395751/python-beautiful-soup-find-string-and-extract-following-string
