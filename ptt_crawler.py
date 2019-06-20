@@ -1,8 +1,13 @@
 from bs4 import BeautifulSoup
 import requests
+from datetime import datetime
+from datetime import timedelta
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+EXPLORE_PAGE = 1
+PUSH_SPEC = 10
 
 class ptt_craw():
     def get_page_number(self, content):
@@ -54,7 +59,13 @@ class ptt_craw():
                 pic_url_list.append(img_url)
         
 
-    def craw_page(self, res, push_rate):
+    def craw_page(self, rs, url):
+
+        url = 'https://www.ptt.cc' + url
+        res = rs.get(url, verify=False)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        
+         
         soup_ = BeautifulSoup(res.text, 'html.parser')
         article_seq = []
         for r_ent in soup_.find_all(class_="r-ent"):
@@ -87,22 +98,83 @@ class ptt_craw():
                 print('本文已被刪除', e)
         return article_seq
 
+    def PushCnt_Calculte(self, push_cnt):
 
-
+        if push_cnt == "爆":
+            return 100
+        elif push_cnt.find("X") > 0 :
+            return -1
+        elif push_cnt == "":
+            return 0
+        else:
+            return int(push_cnt)
+            
 
     def ptt_beauty(self, requests):
         rs = requests.session()
         res = rs.get('https://www.ptt.cc/bbs/Beauty/index.html', verify=False)
         soup = BeautifulSoup(res.text, 'html.parser')
         # print(soup)
+
+        page_option = soup.find(id="action-bar-container")
         tag = page_option.find_all(class_="btn wide")[1]
         link = tag.get('href')
         index = int(link[link.find('index')+5:link.find('.html')])
 
-        while True:
-            url = 'https://www.ptt.cc/bbs/Beauty/index{}.html'.format(index)
-            res = rs.get(index, verify=False)
+        url_list = []
+        for i in range(EXPLORE_PAGE):
+            url_list.append("https://www.ptt.cc/bbs/Beauty/index{}.html".format(index-i))
+        print(url_list)
+
+        target_time = datetime.now() - timedelta(days=1)
+        print("target_time={}".format(target_time))
+
+        find = True
+        while url_list and find :
+            url = url_list.pop(0)
+            res = rs.get(url, verify=False)
+            soup = BeautifulSoup(res.text, 'html.parser')
+            find = False # initial
             
+            print("start crawler page {}".format(url))
+            
+            for r_ent in soup.find_all(class_="r-ent"):
+                try:
+                    subject = r_ent.find('div', class_="title")
+                    if subject.a == None:
+                        # print("本文已被刪除")
+                        continue
+                    print("subject={}".format(subject.a.string))                
+                        
+                    link = r_ent.find('a')['href']
+                    print("link={}".format(link))
+
+                    date_li = r_ent.find("div", class_="date").string.split('/')
+                    print("dateli={}".format(date_li))
+
+                    push_cnt = self.PushCnt_Calculte(r_ent.find(class_="nrec").text)
+
+                    print("push_cnt={}".format(push_cnt))
+                    
+                    if int(date_li[0]) == target_time.month  and int(date_li[1]) == target_time.day and push_cnt > PUSH_SPEC:
+                        print("Need process")
+                        self.craw_page(rs, link)
+                        find = True # has find target day, need continue
+                    
+                    if r_ent.next_sibling:
+                        if r_ent.next_sibling.next_sibling:
+                            next_class_type = r_ent.next_sibling.next_sibling.get('class')[0]
+                            if next_class_type == "r-list-sep":
+                                break
+
+            #         print(type(r_ent))
+
+                except Exception as e:
+                    print('Error={}'.format(e))
+                    print(r_ent)
+
+                    
+        print(url_list)
 
 
 
