@@ -2,11 +2,16 @@ from bs4 import BeautifulSoup
 import requests
 from datetime import datetime
 from datetime import timedelta
+import time
+import logging
+from logging.handlers import TimedRotatingFileHandler, RotatingFileHandler
+import os
+from uploader import *
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-EXPLORE_PAGE = 1
+EXPLORE_PAGE = 5
 PUSH_SPEC = 10
 
 class ptt_craw():
@@ -20,7 +25,7 @@ class ptt_craw():
         res = requests.get(url, verify=False)
         # 先檢查網址是否包含'over18'字串 ,如有則為18禁網站
         if 'over18' in res.url:
-            print("18禁網頁")
+            logger.debug("18禁網頁")
             # 從網址獲得版名
             board = url.split('/')[-2]
             load = {
@@ -59,50 +64,34 @@ class ptt_craw():
                 pic_url_list.append(img_url)
         
 
-    def craw_page(self, rs, url):
+    def craw_page(self, rs, url, pic_url_list):
 
         url = 'https://www.ptt.cc' + url
         res = rs.get(url, verify=False)
         soup = BeautifulSoup(res.text, 'html.parser')
-        
-         
-        soup_ = BeautifulSoup(res.text, 'html.parser')
-        article_seq = []
-        for r_ent in soup_.find_all(class_="r-ent"):
-            try:
-                # 先得到每篇文章的篇url
-                link = r_ent.find('a')['href']
-                if link:
-                    # 確定得到url再去抓 標題 以及 推文數
-                    title = r_ent.find(class_="title").text.strip()
-                    rate = r_ent.find(class_="nrec").text
-                    url = 'https://www.ptt.cc' + link
-                    if rate:
-                        if rate.startswith('爆'):
-                            rate = 100
-                        elif rate.startswith('X'):
-                            rate = -1
-                        else:
-                            rate = int(rate)
-                    else:
-                        rate = 0
-                    # 比對推文數
-                    if int(rate) >= push_rate:
-                        article_seq.append({
-                            'title': title,
-                            'url': url,
-                            'rate': rate,
-                        })
-            except Exception as e:
-                # print('crawPage function error:',r_ent.find(class_="title").text.strip())
-                print('本文已被刪除', e)
-        return article_seq
+
+
+        soup, _ = self.over18(url)
+        # crawler_time = url.split('/')[-2] + crawler_time
+        # 避免有些文章會被使用者自行刪除標題列
+        try:
+            title = soup.select('.article-meta-value')[2].text
+        except Exception as e:
+            title = "no title"
+
+        # 抓取圖片URL(img tag )
+        for img in soup.find_all("a", rel='nofollow'):
+            img_url = self.image_url(img['href'])
+            if img_url:
+                pic_url_list.append(img_url)
+                logger.debug(img_url)
+
 
     def PushCnt_Calculte(self, push_cnt):
 
         if push_cnt == "爆":
             return 100
-        elif push_cnt.find("X") > 0 :
+        elif push_cnt.startswith("X") :
             return -1
         elif push_cnt == "":
             return 0
@@ -124,11 +113,12 @@ class ptt_craw():
         url_list = []
         for i in range(EXPLORE_PAGE):
             url_list.append("https://www.ptt.cc/bbs/Beauty/index{}.html".format(index-i))
-        print(url_list)
+        # print(url_list)
 
         target_time = datetime.now() - timedelta(days=1)
-        print("target_time={}".format(target_time))
+        # print("target_time={}".format(target_time))
 
+        pic_url_list = []
         find = True
         while url_list and find :
             url = url_list.pop(0)
@@ -136,7 +126,7 @@ class ptt_craw():
             soup = BeautifulSoup(res.text, 'html.parser')
             find = False # initial
             
-            print("start crawler page {}".format(url))
+            logger.debug("start crawler page {}".format(url))
             
             for r_ent in soup.find_all(class_="r-ent"):
                 try:
@@ -144,23 +134,29 @@ class ptt_craw():
                     if subject.a == None:
                         # print("本文已被刪除")
                         continue
-                    print("subject={}".format(subject.a.string))                
+                    # print("subject={}".format(subject.a.string))                
                         
                     link = r_ent.find('a')['href']
-                    print("link={}".format(link))
+                    # print("link={}".format(link))
 
                     date_li = r_ent.find("div", class_="date").string.split('/')
-                    print("dateli={}".format(date_li))
+                    # print("dateli={}".format(date_li))
 
                     push_cnt = self.PushCnt_Calculte(r_ent.find(class_="nrec").text)
 
-                    print("push_cnt={}".format(push_cnt))
+                    # print("push_cnt={}".format(push_cnt))
                     
+                    logger.debug("subject={}, link={}, dateli={}, push_cnt={}".format(subject.a.string, link, date_li, push_cnt))
+
                     if int(date_li[0]) == target_time.month  and int(date_li[1]) == target_time.day and push_cnt > PUSH_SPEC:
-                        print("Need process")
-                        self.craw_page(rs, link)
-                        find = True # has find target day, need continue
+                        logger.debug("Need process, {}".format(link))
+                        self.craw_page(rs, link, pic_url_list)
+                        
                     
+                    page_time = datetime.strptime( str(target_time.year) + '/' + str(int(date_li[0])) + '/' +  str(int(date_li[1])), '%Y/%m/%d')
+                    if page_time.date() >= target_time.date() :
+                        find = True # has find target day, need continue
+
                     if r_ent.next_sibling:
                         if r_ent.next_sibling.next_sibling:
                             next_class_type = r_ent.next_sibling.next_sibling.get('class')[0]
@@ -170,60 +166,35 @@ class ptt_craw():
             #         print(type(r_ent))
 
                 except Exception as e:
-                    print('Error={}'.format(e))
-                    print(r_ent)
+                    logger.debug('Error={}'.format(e))
+                    logger.debug(r_ent)
 
                     
-        print(url_list)
-
-
-
-
-
-
-        all_page_url = soup.select('.btn.wide')[1]['href']
-    
-        # https://stackoverflow.com/questions/38395751/python-beautiful-soup-find-string-and-extract-following-string
-        for td in soup.find_all("div",class_="date"):
-            print(td.find_next_sibling("div",class_="r-list-sep"))
-
-
-        start_page = self.get_page_number(all_page_url)
-        page_term = 2  # crawler count
-        push_rate = 10  # 推文
-        index_list = []
-        article_list = []
-        url_list = []
-        for page in range(start_page, start_page - page_term, -1):
-            page_url = 'https://www.ptt.cc/bbs/Beauty/index{}.html'.format(page)
-            index_list.append(page_url)
-
-        # 抓取 文章標題 網址 推文數
-        while index_list:
-            index = index_list.pop(0)
-            res = rs.get(index, verify=False)
-            # 如網頁忙線中,則先將網頁加入 index_list 並休息1秒後再連接
-            if res.status_code != 200:
-                index_list.append(index)
-                # print u'error_URL:',index
-                # time.sleep(1)
-            else:
-                article_list = self.craw_page(res, push_rate)
-                # print u'OK_URL:', index
-                # time.sleep(0.05)
-        content = ''
-        for article in article_list:
-            data = '[{} push] {}\n{}\n\n'.format(article.get('rate', None), article.get('title', None),
-                                                article.get('url', None))
-            self.store_pic(article.get('url', None), url_list)
-
-            content += data
-        return content, url_list
+        logger.debug(url_list)
+        return pic_url_list
 
 
 
 if __name__ == "__main__" :
+
+    logger = logging.getLogger("Rotating Log")
+    logger.setLevel(logging.DEBUG)
+    # add a rotating handler
+    if os.path.isdir("./Log") == False:
+        os.mkdir("./Log")
+    handler = RotatingFileHandler('./Log/myapp.log', maxBytes=2*1024*1024,
+                                  backupCount=5)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
     ptt = ptt_craw()
-    tmp, url_list = ptt.ptt_beauty(requests)
-    print(tmp)
-    print(url_list)
+    pic_url_list = ptt.ptt_beauty(requests)
+    # print(tmp)
+    logger.debug(pic_url_list)
+    
+
+    imgur = uploader()
+    url = pic_url_list.pop(0)
+    imgur.upload_photo(url, imgur.album_id)
+    print("upload... {}".format(url))
