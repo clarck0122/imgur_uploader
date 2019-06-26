@@ -6,6 +6,7 @@ import time
 import logging
 from logging.handlers import TimedRotatingFileHandler, RotatingFileHandler
 import os
+import sys
 from uploader import *
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -46,22 +47,22 @@ class ptt_craw():
             return '{}.jpg'.format(link)
         return ''
         
-    def store_pic(self, url, pic_url_list):
-        # 檢查看板是否為18禁,有些看板為18禁
+    # def store_pic(self, url, pic_url_list):
+    #     # 檢查看板是否為18禁,有些看板為18禁
 
-        soup, _ = self.over18(url)
-        # crawler_time = url.split('/')[-2] + crawler_time
-        # 避免有些文章會被使用者自行刪除標題列
-        try:
-            title = soup.select('.article-meta-value')[2].text
-        except Exception as e:
-            title = "no title"
+    #     soup, _ = self.over18(url)
+    #     # crawler_time = url.split('/')[-2] + crawler_time
+    #     # 避免有些文章會被使用者自行刪除標題列
+    #     try:
+    #         title = soup.select('.article-meta-value')[2].text
+    #     except Exception as e:
+    #         title = "no title"
 
-        # 抓取圖片URL(img tag )
-        for img in soup.find_all("a", rel='nofollow'):
-            img_url = self.image_url(img['href'])
-            if img_url:
-                pic_url_list.append(img_url)
+    #     # 抓取圖片URL(img tag )
+    #     for img in soup.find_all("a", rel='nofollow'):
+    #         img_url = self.image_url(img['href'])
+    #         if img_url:
+    #             pic_url_list.append(img_url)
         
 
     def craw_page(self, rs, url, pic_url_list):
@@ -79,12 +80,17 @@ class ptt_craw():
         except Exception as e:
             title = "no title"
 
+        i = 1
         # 抓取圖片URL(img tag )
         for img in soup.find_all("a", rel='nofollow'):
             img_url = self.image_url(img['href'])
             if img_url:
-                pic_url_list.append(img_url)
-                logger.debug(img_url)
+                objurl = []
+                objurl.append(title + "_" + str(i))
+                objurl.append(img_url)
+                pic_url_list.append(objurl)
+                logger.debug(objurl)
+                i += 1
 
 
     def PushCnt_Calculte(self, push_cnt):
@@ -187,14 +193,18 @@ if __name__ == "__main__" :
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     ptt = ptt_craw()
     pic_url_list = ptt.ptt_beauty(requests)
     # print(tmp)
-    logger.debug(pic_url_list)
+    # logger.debug(pic_url_list)
     
 
     imgur = uploader()
-    url = pic_url_list.pop(0)
-    imgur.upload_photo(url, imgur.album_id)
-    print("upload... {}".format(url))
+    imgur.logger = logger
+    while pic_url_list:
+        objurl = pic_url_list.pop(0)
+        imgur.upload_photo(objurl[1], imgur.album_id,objurl[0])
+        logger.debug("upload... {}, {}".format(objurl[0], objurl[1]))
+    # print("upload... {}".format(url))
