@@ -8,6 +8,7 @@ from logging.handlers import TimedRotatingFileHandler, RotatingFileHandler
 import os
 import sys
 from uploader import *
+from time import sleep
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -207,4 +208,5 @@ if __name__ == "__main__" :
         objurl = pic_url_list.pop(0)
         imgur.upload_photo(objurl[1], imgur.album_id,objurl[0])
         logger.debug("upload... {}, {}".format(objurl[0], objurl[1]))
+        sleep(10)
     # print("upload... {}".format(url))

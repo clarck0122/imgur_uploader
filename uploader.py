@@ -1,15 +1,23 @@
 from imgurpython import ImgurClient
 import os
+import configparser
 
+config = configparser.ConfigParser()
+config.read("config.ini")
 
 class uploader():
 
   def __init__(self):
-    self.client_id = os.environ.get('Client_ID')
-    self.client_secret = os.environ.get('Client_Secret')
-    self.access_token = os.environ.get('access_token')
-    self.refresh_token = os.environ.get('refresh_token')
-    self.album_id = os.environ.get('Album_ID')
+    # self.client_id = os.environ.get('Client_ID')
+    # self.client_secret = os.environ.get('Client_Secret')
+    # self.access_token = os.environ.get('access_token')
+    # self.refresh_token = os.environ.get('refresh_token')
+    # self.album_id = os.environ.get('Album_ID')
+    self.client_id = config['imgur_api']['Client_ID']
+    self.client_secret = config['imgur_api']['Client_Secret']
+    self.access_token = config['imgur_api']['access_token']
+    self.refresh_token = config['imgur_api']['refresh_token']
+    self.album_id = config['imgur_api']['Album_ID']
     self.client = ImgurClient(self.client_id, self.client_secret, self.access_token, self.refresh_token)
     self.logger = None
 
