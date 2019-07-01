@@ -39,11 +39,11 @@ class uploader():
       self.client.upload_from_url(image_url, config=config, anon=False)
     except Exception as e:
       self.exelogging(e)
-      return True
+      return False
 
     self.exelogging("Done")
 
-    return False
+    return True
 
 if __name__ == "__main__":
   print("refresh_token={}".format(os.environ.get('refresh_token')))
