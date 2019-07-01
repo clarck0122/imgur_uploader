@@ -201,7 +201,6 @@ if __name__ == "__main__" :
     # print(tmp)
     # logger.debug(pic_url_list)
     
-
     imgur = uploader()
     imgur.logger = logger
 
