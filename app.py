@@ -211,5 +211,5 @@ if __name__ == "__main__" :
             break
 
         logger.debug("upload... {}, {}".format(objurl[0], objurl[1]))
-        sleep(10)
+        sleep(1)
     # print("upload... {}".format(url))
