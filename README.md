@@ -2,7 +2,7 @@
 
 
 
-upload cute girl image **FROM** [Beauty board](https://www.ptt.cc/bbs/index.html/).
+upload cute girl image **FROM** [Beauty board](https://www.ptt.cc/bbs/Beauty/index.html).
 **TO** [imgur](https://imgur.com/a/8y0utle/).(**This is Final Result**:+1:)
 
 
