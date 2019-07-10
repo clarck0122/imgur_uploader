@@ -28,30 +28,30 @@ form [Beauty board](https://www.ptt.cc/bbs/index.html/).
 
 
 #### 5. Get Access token and Refresh token
-    - Edit auth.py
-    ```
-    self.client_id = # YOUR ClientID
-    self.client_secret = # YOUR Client_Secret
-    ```
-    - and run
-    ```
-    python auth.py
-    ```
-    - go to web url in terminal
-    ![alt tag](https://i.imgur.com/ZRtnEJB.png)
-    - get pin code and enter pin code
+- Edit auth.py
+```
+self.client_id = # YOUR ClientID
+self.client_secret = # YOUR Client_Secret
+```
+- and run
+```
+python auth.py
+```
+- go to web url in terminal
+![alt tag](https://i.imgur.com/ZRtnEJB.png)
+- get pin code and enter pin code
 
 #### 6. Setup uploader
-    - Edit uploader.py
-    ```
-    self.client_id = # YOUR ClientID
-    self.client_secret = # YOUR Client_Secret
-    self.access_token = # YOUR access_token
-    self.refresh_token = # YOUR refresh_token
-    self.album_id = # YOUR Album_ID   
-    ```
+- Edit uploader.py
+```
+self.client_id = # YOUR ClientID
+self.client_secret = # YOUR Client_Secret
+self.access_token = # YOUR access_token
+self.refresh_token = # YOUR refresh_token
+self.album_id = # YOUR Album_ID   
+```
     
 #### 7. execute Main Process
-    ```
-    python app.py
-    ```
+```
+python app.py
+```
