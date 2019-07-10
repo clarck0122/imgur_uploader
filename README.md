@@ -55,3 +55,8 @@ self.album_id = # YOUR Album_ID
 ```
 python app.py
 ```
+
+
+## Get mashape_key for increase uploader limit
+
+https://rapidapi.com/imgur/api/imgur-9/pricing
