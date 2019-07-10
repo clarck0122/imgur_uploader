@@ -14,7 +14,8 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 EXPLORE_PAGE = 5
-PUSH_SPEC = 10
+PUSH_SPEC = 30
+UPLOAD_LIMIT = 100
 
 class ptt_craw():
     def get_page_number(self, content):
@@ -203,13 +204,20 @@ if __name__ == "__main__" :
     
     imgur = uploader()
     imgur.logger = logger
+    cnt = 0
 
     while pic_url_list:
+        cnt += 1
         objurl = pic_url_list.pop(0)
+        logger.debug("Cnt={}, upload... {}, {}".format(cnt, objurl[0], objurl[1]))
+
         if not imgur.upload_photo(objurl[1], imgur.album_id,objurl[0]):
             logger.debug("Occur Error, stop upload.")
             break
-
-        logger.debug("upload... {}, {}".format(objurl[0], objurl[1]))
+        
+        if cnt >= UPLOAD_LIMIT:
+            logger.debug("Reach UPLOAD_LIMIT. stop upload.")
+            break
+        
         sleep(1)
     # print("upload... {}".format(url))
