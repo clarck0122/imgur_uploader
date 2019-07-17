@@ -21,6 +21,8 @@ class uploader():
     # self.album_id = config['imgur_api']['Album_ID']
     # self.mashape_key = config['imgur_api']['Mashape_key']
     self.client = ImgurClient(self.client_id, self.client_secret, self.access_token, self.refresh_token, self.mashape_key)
+
+    
     self.logger = None
 
   def exelogging(self, msg):
