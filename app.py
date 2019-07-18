@@ -8,6 +8,7 @@ from logging.handlers import TimedRotatingFileHandler, RotatingFileHandler
 import os
 import sys
 from uploader import *
+from Create_Album import *
 from time import sleep
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -204,8 +205,15 @@ if __name__ == "__main__" :
     
     imgur = uploader()
     imgur.logger = logger
-    cnt = 0
+    
+    creator = Create_Album()
+    creator.logger = logger
+    today = datetime.now()
+    IsSucess, reply = creator.create("PTT_Beauty_" + str(today.year) + str(today.month) + str(today.day), "a album limit is 512")
+    if IsSucess:
+        imgur.album_id = reply['id']
 
+    cnt = 0
     while pic_url_list:
         cnt += 1
         objurl = pic_url_list.pop(0)
