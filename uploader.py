@@ -1,6 +1,7 @@
 from imgurpython import ImgurClient
 import os
 import configparser
+import requests
 
 config = configparser.ConfigParser()
 config.read("config.ini")
@@ -8,18 +9,19 @@ config.read("config.ini")
 class uploader():
 
   def __init__(self):
-    self.client_id = os.environ.get('Client_ID')
-    self.client_secret = os.environ.get('Client_Secret')
-    self.access_token = os.environ.get('access_token')
-    self.refresh_token = os.environ.get('refresh_token')
-    self.album_id = os.environ.get('Album_ID')
-    self.mashape_key = os.environ.get('Mashape_key')
-    # self.client_id = config['imgur_api']['Client_ID']
-    # self.client_secret = config['imgur_api']['Client_Secret']
-    # self.access_token = config['imgur_api']['access_token']
-    # self.refresh_token = config['imgur_api']['refresh_token']
-    # self.album_id = config['imgur_api']['Album_ID']
-    # self.mashape_key = config['imgur_api']['Mashape_key']
+    # self.client_id = os.environ.get('Client_ID')
+    # self.client_secret = os.environ.get('Client_Secret')
+    # self.access_token = os.environ.get('access_token')
+    # self.refresh_token = os.environ.get('refresh_token')
+    # self.album_id = os.environ.get('Album_ID')
+    # self.mashape_key = os.environ.get('Mashape_key')
+    self.client_id = config['imgur_api']['Client_ID']
+    self.client_secret = config['imgur_api']['Client_Secret']
+    self.access_token = config['imgur_api']['access_token']
+    self.refresh_token = config['imgur_api']['refresh_token']
+    self.album_id = config['imgur_api']['Album_ID']
+    self.mashape_key = config['imgur_api']['Mashape_key']
+    # self.client = ImgurClient(self.client_id, self.client_secret, self.access_token, self.refresh_token)
     self.client = ImgurClient(self.client_id, self.client_secret, self.access_token, self.refresh_token, self.mashape_key)
 
     
@@ -40,7 +42,21 @@ class uploader():
     self.exelogging(config)
     self.exelogging("Uploading image... ")
     try:  
-      self.client.upload_from_url(image_url, config=config, anon=False)
+      if not self.mashape_key :
+        self.client.upload_from_url(image_url, config=config, anon=False)
+      else:
+        #### imgurpython is no longer support, 
+        #### when mashape_key not null, use request directly
+        header = {
+          'Authorization' : 'Bearer {}'.format(self.access_token),
+          'X-RapidAPI-Key' : self.mashape_key,
+        }
+        config["type"] = "url"
+        config["image"] = image_url
+        url = "https://imgur-apiv3.p.rapidapi.com/3/image"
+        response = requests.post(url, headers=header, data=config)
+        print("url={},headers={},data={}".format(url, header, config))
+        print("status_code={}".format(response.status_code))
     except Exception as e:
       self.exelogging(e)
       return False
