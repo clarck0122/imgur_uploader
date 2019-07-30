@@ -30,10 +30,12 @@ class ptt_craw():
         # 先檢查網址是否包含'over18'字串 ,如有則為18禁網站
         if 'over18' in res.url:
             logger.debug("18禁網頁")
+            # print(res.url)
             # 從網址獲得版名
             board = url.split('/')[-2]
+            index = url.split('/')[-1].split('.html')[0]
             load = {
-                'from': '/bbs/{}/index.html'.format(board),
+                'from': '/bbs/{}/{}.html'.format(board,index),
                 'yes': 'yes'
             }
             res = requests.post('https://www.ptt.cc/ask/over18', verify=False, data=load)
@@ -110,8 +112,10 @@ class ptt_craw():
 
     def ptt_beauty(self, requests):
         rs = requests.session()
-        res = rs.get('https://www.ptt.cc/bbs/Beauty/index.html', verify=False)
+        url = "https://www.ptt.cc/bbs/Beauty/index.html"
+        res = rs.get(url, verify=False)
         soup = BeautifulSoup(res.text, 'html.parser')
+        soup, _ = self.over18(url)
         # print(soup)
 
         page_option = soup.find(id="action-bar-container")
@@ -131,8 +135,9 @@ class ptt_craw():
         find = True
         while url_list and find :
             url = url_list.pop(0)
-            res = rs.get(url, verify=False)
+            res = rs.get(url, verify=True)
             soup = BeautifulSoup(res.text, 'html.parser')
+            soup, _ = self.over18(url)
             find = False # initial
             
             logger.debug("start crawler page {}".format(url))
